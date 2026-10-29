@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: k8s-app-api }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: k8s-app-api } }
+  template:
+    metadata: { labels: { app: k8s-app-api, tier: api } }
+    spec:
+      containers:
+      - name: k8s-app-api
+        image: ghcr.io/thimirasadeesha/k8s-app-api:latest
+        ports: [{ containerPort: 3000 }]
+        env:
+        - { name: NODE_ENV, value: production }
+        - { name: PORT, value: "3000" }
+        - name: DATABASE_URL
+          valueFrom: { secretKeyRef: { name: k8s-app-api-secrets, key: DATABASE_URL } }
+        resources:
+          requests: { cpu: 100m, memory: 128Mi }
+          limits: { memory: 256Mi }
+        readinessProbe:
+          httpGet: { path: /health, port: 3000 }
+          initialDelaySeconds: 5
+        livenessProbe:
+          httpGet: { path: /health, port: 3000 }
+          initialDelaySeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata: { name: k8s-app-api }
+spec:
+  selector: { app: k8s-app-api }
+  ports: [{ port: 80, targetPort: 3000 }]
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: k8s-app-api }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: k8s-app-api }
+  minReplicas: 1
+  maxReplicas: 2
+  metrics:
+  - type: Resource
+    resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } }

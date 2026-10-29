@@ -1,0 +1,37 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: dev
+resources:
+- ../../base
+- ingress.yaml
+images:
+- { name: ghcr.io/thimirasadeesha/k8s-app-api, newTag: latest }
+- { name: ghcr.io/thimirasadeesha/k8s-app-ui, newTag: latest }
+- { name: ghcr.io/thimirasadeesha/k8s-app-backend, newTag: latest }
+- { name: ghcr.io/thimirasadeesha/k8s-app-frontend, newTag: latest }
+# dev: fixed single replicas, no autoscaling
+patches:
+- target: { kind: HorizontalPodAutoscaler, name: k8s-app-api }
+  patch: |-
+    $patch: delete
+    apiVersion: autoscaling/v2
+    kind: HorizontalPodAutoscaler
+    metadata: { name: k8s-app-api }
+- target: { kind: HorizontalPodAutoscaler, name: k8s-app-ui }
+  patch: |-
+    $patch: delete
+    apiVersion: autoscaling/v2
+    kind: HorizontalPodAutoscaler
+    metadata: { name: k8s-app-ui }
+- target: { kind: HorizontalPodAutoscaler, name: k8s-app-backend }
+  patch: |-
+    $patch: delete
+    apiVersion: autoscaling/v2
+    kind: HorizontalPodAutoscaler
+    metadata: { name: k8s-app-backend }
+- target: { kind: HorizontalPodAutoscaler, name: k8s-app-frontend }
+  patch: |-
+    $patch: delete
+    apiVersion: autoscaling/v2
+    kind: HorizontalPodAutoscaler
+    metadata: { name: k8s-app-frontend }

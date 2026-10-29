@@ -1,0 +1,67 @@
+# Nightly dumps to a local PVC, keeping 7 days.
+# A backup on the same disk does not survive losing the VPS: sync /backups
+# offsite (rclone to S3/Backblaze) as a second step once this works.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: { name: backups }
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: { requests: { storage: 10Gi } }
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata: { name: backup-postgres }
+spec:
+  schedule: "0 2 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: dump
+            image: postgres:16-alpine
+            command: ["/bin/sh", "-c"]
+            args:
+            - |
+              pg_dumpall -h postgres -U postgres | gzip > /backups/postgres-$(date +%F).sql.gz &&
+              find /backups -name 'postgres-*.sql.gz' -mtime +7 -delete
+            env:
+            - name: PGPASSWORD
+              valueFrom: { secretKeyRef: { name: postgres-secret, key: POSTGRES_PASSWORD } }
+            resources:
+              requests: { cpu: 10m, memory: 32Mi }
+              limits: { memory: 128Mi }
+            volumeMounts: [{ name: backups, mountPath: /backups }]
+          volumes:
+          - { name: backups, persistentVolumeClaim: { claimName: backups } }
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata: { name: backup-mariadb }
+spec:
+  schedule: "30 2 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: dump
+            image: mariadb:11
+            command: ["/bin/sh", "-c"]
+            args:
+            - |
+              mariadb-dump -h mariadb -u root --all-databases --single-transaction | gzip > /backups/mariadb-$(date +%F).sql.gz &&
+              find /backups -name 'mariadb-*.sql.gz' -mtime +7 -delete
+            env:
+            - name: MYSQL_PWD
+              valueFrom: { secretKeyRef: { name: mariadb-secret, key: MARIADB_ROOT_PASSWORD } }
+            resources:
+              requests: { cpu: 10m, memory: 32Mi }
+              limits: { memory: 128Mi }
+            volumeMounts: [{ name: backups, mountPath: /backups }]
+          volumes:
+          - { name: backups, persistentVolumeClaim: { claimName: backups } }

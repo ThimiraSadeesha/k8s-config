@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: apps
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  tls:
+  - hosts: [app.example.com, full.example.com]
+    secretName: apps-tls
+  rules:
+  - host: app.example.com
+    http:
+      paths:
+      - { path: /api, pathType: Prefix, backend: { service: { name: k8s-app-api, port: { number: 80 } } } }
+      - { path: /, pathType: Prefix, backend: { service: { name: k8s-app-ui, port: { number: 80 } } } }
+  - host: full.example.com
+    http:
+      paths:
+      - { path: /api, pathType: Prefix, backend: { service: { name: k8s-app-backend, port: { number: 80 } } } }
+      - { path: /, pathType: Prefix, backend: { service: { name: k8s-app-frontend, port: { number: 80 } } } }
