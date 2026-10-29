@@ -12,8 +12,8 @@ metadata: { name: dev-quota, namespace: dev }
 spec:
   hard:
     requests.cpu: "600m"
-    requests.memory: 700Mi
-    limits.memory: 1400Mi
+    requests.memory: 900Mi
+    limits.memory: 1800Mi
     persistentvolumeclaims: "4"
 ---
 apiVersion: v1
