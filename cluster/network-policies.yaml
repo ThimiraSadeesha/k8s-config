@@ -1,0 +1,28 @@
+# Applied to both namespaces: only app pods may reach the databases,
+# and nothing in dev can talk to prod (policies are namespace-scoped, so
+# cross-namespace ingress is denied by default once these exist).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: db-from-apis-only, namespace: dev }
+spec:
+  podSelector:
+    matchExpressions:
+    - { key: tier, operator: In, values: [db] }
+  policyTypes: [Ingress]
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels: { tier: api }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: db-from-apis-only, namespace: prod }
+spec:
+  podSelector:
+    matchExpressions:
+    - { key: tier, operator: In, values: [db] }
+  policyTypes: [Ingress]
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels: { tier: api }
