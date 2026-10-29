@@ -5,7 +5,7 @@ resources:
 - ../../base
 - ingress.yaml
 images:
-- { name: ghcr.io/thimirasadeesha/k8s-app-api, newTag: "35c1f114" }
+- { name: ghcr.io/thimirasadeesha/k8s-app-api, newTag: "35458251" }
 - { name: ghcr.io/thimirasadeesha/k8s-app-ui, newTag: "7be86248" }
 - { name: ghcr.io/thimirasadeesha/k8s-app-backend, newTag: latest }
 - { name: ghcr.io/thimirasadeesha/k8s-app-frontend, newTag: latest }
