@@ -1,0 +1,94 @@
+# CI deployers: one ServiceAccount per namespace that can only apply the app manifests there.
+# No access to Secrets, other namespaces, or cluster-scoped objects, and no delete verb.
+# Apply once on the VPS:  kubectl apply -f cluster/ci-rbac.yaml
+# Then generate the GitHub secret with scripts/make-ci-kubeconfig.sh <dev|prod>
+apiVersion: v1
+kind: ServiceAccount
+metadata: { name: ci-deployer, namespace: dev }
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ci-deployer-token
+  namespace: dev
+  annotations: { kubernetes.io/service-account.name: ci-deployer }
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: { name: ci-deployer, namespace: dev }
+rules:
+- apiGroups: [""]
+  resources: [services, persistentvolumeclaims]
+  verbs: [get, list, watch, create, update, patch]
+- apiGroups: [apps]
+  resources: [deployments, statefulsets]
+  verbs: [get, list, watch, create, update, patch]
+- apiGroups: [autoscaling]
+  resources: [horizontalpodautoscalers]
+  verbs: [get, list, watch, create, update, patch]
+- apiGroups: [networking.k8s.io]
+  resources: [ingresses]
+  verbs: [get, list, watch, create, update, patch]
+- apiGroups: [batch]
+  resources: [cronjobs]
+  verbs: [get, list, watch, create, update, patch]
+# read-only, so `kubectl rollout status` and debugging work
+- apiGroups: [""]
+  resources: [pods]
+  verbs: [get, list, watch]
+- apiGroups: [apps]
+  resources: [replicasets]
+  verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: { name: ci-deployer, namespace: dev }
+subjects:
+- { kind: ServiceAccount, name: ci-deployer, namespace: dev }
+roleRef: { apiGroup: rbac.authorization.k8s.io, kind: Role, name: ci-deployer }
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: { name: ci-deployer, namespace: prod }
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ci-deployer-token
+  namespace: prod
+  annotations: { kubernetes.io/service-account.name: ci-deployer }
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: { name: ci-deployer, namespace: prod }
+rules:
+- apiGroups: [""]
+  resources: [services, persistentvolumeclaims]
+  verbs: [get, list, watch, create, update, patch]
+- apiGroups: [apps]
+  resources: [deployments, statefulsets]
+  verbs: [get, list, watch, create, update, patch]
+- apiGroups: [autoscaling]
+  resources: [horizontalpodautoscalers]
+  verbs: [get, list, watch, create, update, patch]
+- apiGroups: [networking.k8s.io]
+  resources: [ingresses]
+  verbs: [get, list, watch, create, update, patch]
+- apiGroups: [batch]
+  resources: [cronjobs]
+  verbs: [get, list, watch, create, update, patch]
+- apiGroups: [""]
+  resources: [pods]
+  verbs: [get, list, watch]
+- apiGroups: [apps]
+  resources: [replicasets]
+  verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: { name: ci-deployer, namespace: prod }
+subjects:
+- { kind: ServiceAccount, name: ci-deployer, namespace: prod }
+roleRef: { apiGroup: rbac.authorization.k8s.io, kind: Role, name: ci-deployer }
