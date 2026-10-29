@@ -1,0 +1,21 @@
+# NOT enabled yet. To use it:
+#   1. add DNS A records (-> 51.79.158.90) for the two hosts below
+#   2. add "- ingress-fullstack.yaml" under resources in kustomization.yaml
+# Keeping it separate means a missing DNS record cannot block the main certificate.
+# The Go backend must serve its routes under /api.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fullstack
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  tls:
+  - hosts: [fullstack.dev-k8s.auren.rest]
+    secretName: fullstack-tls
+  rules:
+  - host: fullstack.dev-k8s.auren.rest
+    http:
+      paths:
+      - { path: /api, pathType: Prefix, backend: { service: { name: k8s-app-backend, port: { number: 80 } } } }
+      - { path: /, pathType: Prefix, backend: { service: { name: k8s-app-frontend, port: { number: 80 } } } }

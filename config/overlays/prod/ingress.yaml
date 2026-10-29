@@ -1,3 +1,6 @@
+# k8s.auren.rest      -> k8s-app-ui (/), and /api -> k8s-app-api (same origin, no CORS needed)
+# api.k8s.auren.rest  -> k8s-app-api (all paths; NestJS routes live under /api)
+# The fullstack app is in ingress-fullstack.yaml, not enabled until its DNS records exist.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -6,16 +9,15 @@ metadata:
     cert-manager.io/cluster-issuer: letsencrypt
 spec:
   tls:
-  - hosts: [app.example.com, full.example.com]
+  - hosts: [k8s.auren.rest, api.k8s.auren.rest]
     secretName: apps-tls
   rules:
-  - host: app.example.com
+  - host: k8s.auren.rest
     http:
       paths:
       - { path: /api, pathType: Prefix, backend: { service: { name: k8s-app-api, port: { number: 80 } } } }
       - { path: /, pathType: Prefix, backend: { service: { name: k8s-app-ui, port: { number: 80 } } } }
-  - host: full.example.com
+  - host: api.k8s.auren.rest
     http:
       paths:
-      - { path: /api, pathType: Prefix, backend: { service: { name: k8s-app-backend, port: { number: 80 } } } }
-      - { path: /, pathType: Prefix, backend: { service: { name: k8s-app-frontend, port: { number: 80 } } } }
+      - { path: /, pathType: Prefix, backend: { service: { name: k8s-app-api, port: { number: 80 } } } }

@@ -1,7 +1,7 @@
-# Two sites on one node:
-#   dev.example.com       -> k8s-app-ui (/) + k8s-app-api (/api, NestJS)
-#   dev-full.example.com  -> k8s-app-frontend (/) + k8s-app-backend (/api, Go)
-# NestJS needs app.setGlobalPrefix('api'); the Go server serves routes under /api.
+# dev-k8s.auren.rest      -> k8s-app-ui (/), and /api -> k8s-app-api (same origin, no CORS needed)
+# api.dev-k8s.auren.rest  -> k8s-app-api (all paths; NestJS routes live under /api)
+# The fullstack app (k8s-app-frontend / k8s-app-backend) is in ingress-fullstack.yaml,
+# not enabled until its DNS records exist.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -10,16 +10,15 @@ metadata:
     cert-manager.io/cluster-issuer: letsencrypt
 spec:
   tls:
-  - hosts: [dev.example.com, dev-full.example.com]
+  - hosts: [dev-k8s.auren.rest, api.dev-k8s.auren.rest]
     secretName: apps-tls
   rules:
-  - host: dev.example.com
+  - host: dev-k8s.auren.rest
     http:
       paths:
       - { path: /api, pathType: Prefix, backend: { service: { name: k8s-app-api, port: { number: 80 } } } }
       - { path: /, pathType: Prefix, backend: { service: { name: k8s-app-ui, port: { number: 80 } } } }
-  - host: dev-full.example.com
+  - host: api.dev-k8s.auren.rest
     http:
       paths:
-      - { path: /api, pathType: Prefix, backend: { service: { name: k8s-app-backend, port: { number: 80 } } } }
-      - { path: /, pathType: Prefix, backend: { service: { name: k8s-app-frontend, port: { number: 80 } } } }
+      - { path: /, pathType: Prefix, backend: { service: { name: k8s-app-api, port: { number: 80 } } } }
