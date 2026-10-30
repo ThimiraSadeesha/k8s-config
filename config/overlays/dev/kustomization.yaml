@@ -7,8 +7,6 @@ resources:
 images:
 - { name: ghcr.io/thimirasadeesha/k8s-app-api, newTag: "35458251" }
 - { name: ghcr.io/thimirasadeesha/k8s-app-ui, newTag: "7be86248" }
-- { name: ghcr.io/thimirasadeesha/k8s-app-backend, newTag: latest }
-- { name: ghcr.io/thimirasadeesha/k8s-app-frontend, newTag: latest }
 # dev: fixed single replicas, no autoscaling
 patches:
 - target: { kind: HorizontalPodAutoscaler, name: k8s-app-api }
@@ -23,15 +21,3 @@ patches:
     apiVersion: autoscaling/v2
     kind: HorizontalPodAutoscaler
     metadata: { name: k8s-app-ui }
-- target: { kind: HorizontalPodAutoscaler, name: k8s-app-backend }
-  patch: |-
-    $patch: delete
-    apiVersion: autoscaling/v2
-    kind: HorizontalPodAutoscaler
-    metadata: { name: k8s-app-backend }
-- target: { kind: HorizontalPodAutoscaler, name: k8s-app-frontend }
-  patch: |-
-    $patch: delete
-    apiVersion: autoscaling/v2
-    kind: HorizontalPodAutoscaler
-    metadata: { name: k8s-app-frontend }

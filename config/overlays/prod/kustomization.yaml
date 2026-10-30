@@ -7,36 +7,20 @@ resources:
 - backups.yaml
 images:
 - { name: ghcr.io/thimirasadeesha/k8s-app-api, newTag: latest }
-- { name: ghcr.io/thimirasadeesha/k8s-app-backend, newTag: latest }
 - { name: ghcr.io/thimirasadeesha/k8s-app-ui, newTag: latest }
-- { name: ghcr.io/thimirasadeesha/k8s-app-frontend, newTag: latest }
 patches:
 # 2 replicas minimum for the apps; HPA scales up from there
 - target: { kind: Deployment, name: k8s-app-api }
   patch: |-
     - { op: replace, path: /spec/replicas, value: 2 }
-- target: { kind: Deployment, name: k8s-app-backend }
-  patch: |-
-    - { op: replace, path: /spec/replicas, value: 2 }
 - target: { kind: Deployment, name: k8s-app-ui }
-  patch: |-
-    - { op: replace, path: /spec/replicas, value: 2 }
-- target: { kind: Deployment, name: k8s-app-frontend }
   patch: |-
     - { op: replace, path: /spec/replicas, value: 2 }
 - target: { kind: HorizontalPodAutoscaler, name: k8s-app-api }
   patch: |-
     - { op: replace, path: /spec/minReplicas, value: 2 }
     - { op: replace, path: /spec/maxReplicas, value: 3 }
-- target: { kind: HorizontalPodAutoscaler, name: k8s-app-backend }
-  patch: |-
-    - { op: replace, path: /spec/minReplicas, value: 2 }
-    - { op: replace, path: /spec/maxReplicas, value: 4 }
 - target: { kind: HorizontalPodAutoscaler, name: k8s-app-ui }
-  patch: |-
-    - { op: replace, path: /spec/minReplicas, value: 2 }
-    - { op: replace, path: /spec/maxReplicas, value: 3 }
-- target: { kind: HorizontalPodAutoscaler, name: k8s-app-frontend }
   patch: |-
     - { op: replace, path: /spec/minReplicas, value: 2 }
     - { op: replace, path: /spec/maxReplicas, value: 3 }
