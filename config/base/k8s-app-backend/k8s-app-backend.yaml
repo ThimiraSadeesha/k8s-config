@@ -1,3 +1,6 @@
+# ZENT API (FastAPI). Login sessions live in this pod's memory, so it runs as a single replica
+# with no HPA: a second pod would not know the first one's sessions. A restart signs everyone out.
+# PUBLIC_URL and CORS_ORIGINS are set per environment in the overlays.
 apiVersion: apps/v1
 kind: Deployment
 metadata: { name: k8s-app-backend }
@@ -10,34 +13,25 @@ spec:
       containers:
       - name: k8s-app-backend
         image: ghcr.io/thimirasadeesha/k8s-app-backend:latest
-        ports: [{ containerPort: 8080 }]
+        ports: [{ containerPort: 8000 }]
         env:
-        - { name: PORT, value: "8080" }
-        - name: DATABASE_URL
-          valueFrom: { secretKeyRef: { name: k8s-app-backend-secrets, key: DATABASE_URL } }
+        - { name: APP_ENV, value: production }
+        - { name: TRUSTED_PROXY_COUNT, value: "1" }   # Traefik
+        - name: ENCRYPTION_KEY
+          valueFrom: { secretKeyRef: { name: k8s-app-secrets, key: ENCRYPTION_KEY } }
         resources:
-          requests: { cpu: 50m, memory: 32Mi }
-          limits: { memory: 128Mi }
+          requests: { cpu: 25m, memory: 64Mi }
+          limits: { memory: 192Mi }
         readinessProbe:
-          httpGet: { path: /healthz, port: 8080 }
+          httpGet: { path: /healthz, port: 8000 }
+          initialDelaySeconds: 5
         livenessProbe:
-          httpGet: { path: /healthz, port: 8080 }
-          initialDelaySeconds: 10
+          httpGet: { path: /healthz, port: 8000 }
+          initialDelaySeconds: 20
 ---
 apiVersion: v1
 kind: Service
 metadata: { name: k8s-app-backend }
 spec:
   selector: { app: k8s-app-backend }
-  ports: [{ port: 80, targetPort: 8080 }]
----
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata: { name: k8s-app-backend }
-spec:
-  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: k8s-app-backend }
-  minReplicas: 1
-  maxReplicas: 3
-  metrics:
-  - type: Resource
-    resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } }
+  ports: [{ port: 80, targetPort: 8000 }]

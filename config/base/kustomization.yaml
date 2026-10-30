@@ -3,8 +3,7 @@ kind: Kustomization
 resources:
 - k8s-app-api/k8s-app-api.yaml
 - k8s-app-ui/k8s-app-ui.yaml
-# fullstack app (k8s-app repo) is not built yet: add these back when its images exist
-# - k8s-app-backend/k8s-app-backend.yaml
-# - k8s-app-frontend/k8s-app-frontend.yaml
+- k8s-app-backend/k8s-app-backend.yaml
+- k8s-app-frontend/k8s-app-frontend.yaml
 - postgres/postgres.yaml
 - mariadb/mariadb.yaml

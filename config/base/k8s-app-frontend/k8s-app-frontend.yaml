@@ -1,3 +1,4 @@
+# ZENT UI (Next.js). It proxies /api/v1 to the k8s-app-backend Service (address baked in at build time).
 apiVersion: apps/v1
 kind: Deployment
 metadata: { name: k8s-app-frontend }
@@ -14,8 +15,11 @@ spec:
         env:
         - { name: NODE_ENV, value: production }
         - { name: HOSTNAME, value: "0.0.0.0" }
+        # same key as the backend: the browser fetches it at runtime to encrypt API traffic
+        - name: ENCRYPTION_KEY
+          valueFrom: { secretKeyRef: { name: k8s-app-secrets, key: ENCRYPTION_KEY } }
         resources:
-          requests: { cpu: 50m, memory: 96Mi }
+          requests: { cpu: 25m, memory: 96Mi }
           limits: { memory: 192Mi }
         readinessProbe:
           httpGet: { path: /, port: 3000 }
