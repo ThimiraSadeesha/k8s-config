@@ -45,8 +45,8 @@ patches:
           containers:
           - name: k8s-app-backend
             env:
-            - { name: PUBLIC_URL, value: "https://fullstack.k8s.auren.rest" }
-            - { name: CORS_ORIGINS, value: "https://fullstack.k8s.auren.rest" }
+            - { name: PUBLIC_URL, value: "https://zent.auren.com" }
+            - { name: CORS_ORIGINS, value: "https://zent.auren.com" }
 # bigger DB memory and caches in prod
 - target: { kind: StatefulSet, name: postgres }
   patch: |-
