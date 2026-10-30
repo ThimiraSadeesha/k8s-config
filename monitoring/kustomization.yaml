@@ -1,0 +1,12 @@
+# Metrics + dashboards (Grafana, VictoriaMetrics, kube-state-metrics, node-exporter), about 340Mi of RAM.
+# Cluster-admin applies this by hand on the VPS (the CI account is limited to dev/prod):
+#   kubectl apply -k monitoring
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: monitoring
+resources:
+- namespace.yaml
+- victoria-metrics.yaml
+- exporters.yaml
+- grafana.yaml
+- ingress.yaml

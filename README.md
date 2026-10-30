@@ -7,6 +7,7 @@ Kubernetes manifests for the k3s VPS. This repo is the source of truth for what 
 cluster/   one-time cluster objects: namespaces + quotas, TLS issuer, network policies, CI RBAC
 config/    Kustomize base + overlays/dev + overlays/prod
 scripts/   create-secrets.example.sh (DB + app secrets), make-ci-kubeconfig.sh
+monitoring/ Grafana + VictoriaMetrics (metrics, 7 days), applied by hand: kubectl apply -k monitoring
 ```
 
 | App repo | Image |
@@ -75,3 +76,19 @@ anonymously, so there is no pull secret.
 - Tags are the 8-character commit SHA; never `latest`.
 - Rotating the CI credential: delete the `ci-deployer-token` secret in the namespace, re-apply
   `cluster/ci-rbac.yaml`, and run `make-ci-kubeconfig.sh` again.
+
+## Monitoring (Grafana, free self-hosted)
+
+Runs in the `monitoring` namespace (~340Mi RAM) at `https://grafana.auren.rest`. Not deployed by CI:
+the CI account only has access to dev and prod.
+
+```bash
+# DNS first: grafana.auren.rest -> 51.79.158.90
+kubectl create namespace monitoring
+kubectl -n monitoring create secret generic grafana-admin --from-literal=admin-password="$(openssl rand -base64 18)"
+kubectl apply -k monitoring
+kubectl -n monitoring get secret grafana-admin -o jsonpath='{.data.admin-password}' | base64 -d; echo
+```
+
+Log in as `admin`, then Dashboards > New > Import and enter an ID: `1860` (node), `15757` (cluster),
+`15760` (pods). Pick the `VictoriaMetrics` data source.

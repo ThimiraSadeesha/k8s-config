@@ -1,0 +1,17 @@
+# Needs the DNS record grafana.auren.rest -> 51.79.158.90
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grafana
+  namespace: monitoring
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  tls:
+  - hosts: [grafana.auren.rest]
+    secretName: grafana-tls
+  rules:
+  - host: grafana.auren.rest
+    http:
+      paths:
+      - { path: /, pathType: Prefix, backend: { service: { name: grafana, port: { number: 80 } } } }

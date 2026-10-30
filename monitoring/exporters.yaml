@@ -1,0 +1,89 @@
+# kube-state-metrics: object state (pods, deployments, HPAs, restarts).
+# node-exporter: host CPU, memory, disk. Runs without hostNetwork so port 9100 is not
+# opened on the public IP; network traffic comes from cadvisor instead.
+apiVersion: v1
+kind: ServiceAccount
+metadata: { name: kube-state-metrics, namespace: monitoring }
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata: { name: kube-state-metrics }
+rules:
+- apiGroups: [""]
+  resources: [pods, nodes, namespaces, services, persistentvolumeclaims, persistentvolumes, resourcequotas, limitranges, replicationcontrollers, endpoints]
+  verbs: [list, watch]
+- apiGroups: [apps]
+  resources: [deployments, statefulsets, replicasets, daemonsets]
+  verbs: [list, watch]
+- apiGroups: [autoscaling]
+  resources: [horizontalpodautoscalers]
+  verbs: [list, watch]
+- apiGroups: [batch]
+  resources: [jobs, cronjobs]
+  verbs: [list, watch]
+- apiGroups: [networking.k8s.io]
+  resources: [ingresses]
+  verbs: [list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata: { name: kube-state-metrics }
+subjects:
+- { kind: ServiceAccount, name: kube-state-metrics, namespace: monitoring }
+roleRef: { apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: kube-state-metrics }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: kube-state-metrics, namespace: monitoring }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: kube-state-metrics } }
+  template:
+    metadata: { labels: { app: kube-state-metrics } }
+    spec:
+      serviceAccountName: kube-state-metrics
+      containers:
+      - name: ksm
+        image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.13.0
+        ports: [{ containerPort: 8080 }]
+        resources:
+          requests: { cpu: 10m, memory: 48Mi }
+          limits: { memory: 96Mi }
+        readinessProbe: { httpGet: { path: /, port: 8080 } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: kube-state-metrics, namespace: monitoring }
+spec:
+  selector: { app: kube-state-metrics }
+  ports: [{ port: 8080, targetPort: 8080 }]
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata: { name: node-exporter, namespace: monitoring }
+spec:
+  selector: { matchLabels: { app: node-exporter } }
+  template:
+    metadata: { labels: { app: node-exporter } }
+    spec:
+      containers:
+      - name: node-exporter
+        image: quay.io/prometheus/node-exporter:v1.8.2
+        args:
+        - --path.rootfs=/host
+        - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/(kubelet|rancher)/.+|run/k3s/.+)($|/)
+        ports: [{ containerPort: 9100 }]
+        resources:
+          requests: { cpu: 10m, memory: 32Mi }
+          limits: { memory: 64Mi }
+        volumeMounts:
+        - { name: root, mountPath: /host, readOnly: true }
+      volumes:
+      - { name: root, hostPath: { path: / } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: node-exporter, namespace: monitoring }
+spec:
+  selector: { app: node-exporter }
+  ports: [{ port: 9100, targetPort: 9100 }]

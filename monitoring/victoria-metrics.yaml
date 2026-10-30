@@ -1,0 +1,91 @@
+# VictoriaMetrics single node: Prometheus-compatible storage that scrapes the targets below
+# and keeps 7 days. Cadvisor (per-container CPU/memory) is read through the API server proxy.
+apiVersion: v1
+kind: ServiceAccount
+metadata: { name: victoria-metrics, namespace: monitoring }
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata: { name: victoria-metrics }
+rules:
+- apiGroups: [""]
+  resources: [nodes, nodes/metrics, nodes/proxy]
+  verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata: { name: victoria-metrics }
+subjects:
+- { kind: ServiceAccount, name: victoria-metrics, namespace: monitoring }
+roleRef: { apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: victoria-metrics }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: vm-scrape, namespace: monitoring }
+data:
+  scrape.yml: |
+    global:
+      scrape_interval: 30s
+    scrape_configs:
+    - job_name: cadvisor
+      scheme: https
+      tls_config: { ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt }
+      authorization: { credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token }
+      kubernetes_sd_configs: [{ role: node }]
+      relabel_configs:
+      - { target_label: __address__, replacement: "kubernetes.default.svc:443" }
+      - source_labels: [__meta_kubernetes_node_name]
+        regex: (.+)
+        target_label: __metrics_path__
+        replacement: /api/v1/nodes/$1/proxy/metrics/cadvisor
+    - job_name: kube-state-metrics
+      static_configs: [{ targets: ["kube-state-metrics:8080"] }]
+    - job_name: node-exporter
+      static_configs: [{ targets: ["node-exporter:9100"] }]
+    - job_name: victoria-metrics
+      static_configs: [{ targets: ["localhost:8428"] }]
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: { name: vm-data, namespace: monitoring }
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: { requests: { storage: 3Gi } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: victoria-metrics, namespace: monitoring }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector: { matchLabels: { app: victoria-metrics } }
+  template:
+    metadata: { labels: { app: victoria-metrics } }
+    spec:
+      serviceAccountName: victoria-metrics
+      containers:
+      - name: vm
+        image: victoriametrics/victoria-metrics:v1.102.1
+        args:
+        - -storageDataPath=/data
+        - -retentionPeriod=7d
+        - -promscrape.config=/config/scrape.yml
+        - -memory.allowedPercent=50
+        ports: [{ containerPort: 8428 }]
+        resources:
+          requests: { cpu: 50m, memory: 128Mi }
+          limits: { memory: 320Mi }
+        readinessProbe: { httpGet: { path: /health, port: 8428 } }
+        volumeMounts:
+        - { name: data, mountPath: /data }
+        - { name: config, mountPath: /config }
+      volumes:
+      - { name: data, persistentVolumeClaim: { claimName: vm-data } }
+      - { name: config, configMap: { name: vm-scrape } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: victoria-metrics, namespace: monitoring }
+spec:
+  selector: { app: victoria-metrics }
+  ports: [{ port: 8428, targetPort: 8428 }]
