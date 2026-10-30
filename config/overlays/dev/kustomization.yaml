@@ -7,17 +7,5 @@ resources:
 images:
 - { name: ghcr.io/thimirasadeesha/k8s-app-api, newTag: "5079f271" }
 - { name: ghcr.io/thimirasadeesha/k8s-app-ui, newTag: "7be86248" }
-# dev: fixed single replicas, no autoscaling
-patches:
-- target: { kind: HorizontalPodAutoscaler, name: k8s-app-api }
-  patch: |-
-    $patch: delete
-    apiVersion: autoscaling/v2
-    kind: HorizontalPodAutoscaler
-    metadata: { name: k8s-app-api }
-- target: { kind: HorizontalPodAutoscaler, name: k8s-app-ui }
-  patch: |-
-    $patch: delete
-    apiVersion: autoscaling/v2
-    kind: HorizontalPodAutoscaler
-    metadata: { name: k8s-app-ui }
+# dev: 1 pod normally; the base HPAs (cpu 70%, max 2) scale api and ui up under load.
+# Quota math: 480Mi steady + 1 extra api + 1 extra ui + rollout surge stays under the 900Mi quota.
