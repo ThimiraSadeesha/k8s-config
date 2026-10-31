@@ -31,5 +31,5 @@ patches:
           containers:
           - name: k8s-app-backend
             env:
-            - { name: PUBLIC_URL, value: "https://fullstack.dev-k8s.auren.rest" }
-            - { name: CORS_ORIGINS, value: "https://fullstack.dev-k8s.auren.rest" }
+            - { name: PUBLIC_URL, value: "https://dev.zent.auren.rest" }
+            - { name: CORS_ORIGINS, value: "https://dev.zent.auren.rest" }

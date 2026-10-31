@@ -1,4 +1,4 @@
-# ZENT at fullstack.dev-k8s.auren.rest (needs a DNS A record -> 51.79.158.90).
+# ZENT at dev.zent.auren.rest (needs a DNS A record -> 51.79.158.90).
 # A separate Ingress and certificate, so a missing DNS record cannot block the main one.
 # The UI proxies /api/v1 to the backend itself, so only the UI is exposed.
 apiVersion: networking.k8s.io/v1
@@ -9,10 +9,10 @@ metadata:
     cert-manager.io/cluster-issuer: letsencrypt
 spec:
   tls:
-  - hosts: [fullstack.dev-k8s.auren.rest]
+  - hosts: [dev.zent.auren.rest]
     secretName: fullstack-tls
   rules:
-  - host: fullstack.dev-k8s.auren.rest
+  - host: dev.zent.auren.rest
     http:
       paths:
       - { path: /, pathType: Prefix, backend: { service: { name: k8s-app-frontend, port: { number: 80 } } } }

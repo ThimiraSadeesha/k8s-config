@@ -16,7 +16,7 @@ monitoring/ Grafana + VictoriaMetrics (metrics, 7 days), applied by hand: kubect
 | `k8s-app-ui` | `ghcr.io/thimirasadeesha/k8s-app-ui` |
 | `k8s-app` (ZENT: Next.js UI + FastAPI API) | `k8s-app-frontend` and `k8s-app-backend` |
 
-Hosts: `dev-k8s.auren.rest` / `api.dev-k8s.auren.rest` / `fullstack.dev-k8s.auren.rest` (dev), `k8s.auren.rest` / `api.k8s.auren.rest` / `zent.auren.com` (prod).
+Hosts: `dev-k8s.auren.rest` / `api.dev-k8s.auren.rest` / `dev.zent.auren.rest` (dev), `k8s.auren.rest` / `api.k8s.auren.rest` / `zent.auren.com` (prod).
 
 ## Apply by hand (on the VPS)
 
